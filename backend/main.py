@@ -3,6 +3,8 @@ from pydantic import BaseModel
 from parser.sql_parser import parse_query
 from optimizer.rules import detect_select_star, check_no_where
 from estimator.cost_estimator import estimate_cost
+from aws.glue_service import get_table_schema
+from aws.s3_service import get_bucket_size
 
 
 
@@ -35,4 +37,29 @@ def analyze_query(data: QueryInput):
         "parsed": parsed,
         "warnings": warnings,
         "cost estimate":cost
+    }
+
+@app.get("/schema")
+def schema():
+    cols = get_table_schema("optimizer_db", "sales")
+    return {"columns": cols}
+
+@app.post("/optimize")
+def optimize(data: QueryInput):
+
+    parsed = parse_query(data.query)
+
+    schema = get_table_schema("optimizer_db", parsed["table"])
+
+    size = get_bucket_size("athena-query-optimizer-data")
+
+    cost = estimate_cost(
+        size,
+        len(parsed["columns"]),
+        len(schema)
+    )
+
+    return {
+        "parsed": parsed,
+        "estimated_cost": cost
     }

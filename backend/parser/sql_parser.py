@@ -1,19 +1,39 @@
-import sqlparse
+# import sqlparse
+
+
+# def parse_query(query: str):
+
+#     query = query.lower()
+
+#     columns_part = query.split("from")[0].replace("select", "").strip()
+#     table_part = query.split("from")[1].strip()
+
+#     columns = [c.strip() for c in columns_part.split(",")]
+
+#     # ✅ REMOVE semicolon + spaces
+#     table = table_part.replace(";", "").strip()
+
+#     return {
+#         "columns": columns,
+#         "table": table
+#     }
+
+import re
+
+def clean_identifier(name: str):
+    return re.sub(r"[;]", "", name).strip()
 
 def parse_query(query: str):
+
     query = query.lower()
 
-    table = None
-    columns = []
-    
-    if "from" in query:
-        table = query.split("from")[1].split()[0]
+    columns_part = query.split("from")[0].replace("select", "").strip()
+    table_part = query.split("from")[1]
 
-    if "select" in query:
-        cols = query.split("from")[0].replace("select", "").strip()
-        columns = [c.strip() for c in cols.split(",")]
+    columns = [c.strip() for c in columns_part.split(",")]
+    table = clean_identifier(table_part)
 
     return {
-        "table": table,
-        "columns": columns
+        "columns": columns,
+        "table": table
     }

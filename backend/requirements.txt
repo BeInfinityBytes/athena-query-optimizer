@@ -3,3 +3,4 @@ uvicorn
 sqlparse
 pydantic
 python-dotenv
+boto3
