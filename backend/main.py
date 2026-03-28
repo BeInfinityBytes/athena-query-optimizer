@@ -5,7 +5,8 @@ from optimizer.rules import detect_select_star, check_no_where
 from estimator.cost_estimator import estimate_cost
 from aws.glue_service import get_table_schema
 from aws.s3_service import get_bucket_size
-
+from optimizer.suggestions import generate_suggestions
+from optimizer.scorer import calculate_score
 
 
 app = FastAPI()
@@ -22,6 +23,7 @@ def home():
 def analyze_query(data: QueryInput):
 
     parsed = parse_query(data.query)
+    
 
     warnings = []
 
@@ -59,7 +61,18 @@ def optimize(data: QueryInput):
         len(schema)
     )
 
+    # NEW PART
+    suggestions = generate_suggestions(
+        parsed,
+        schema
+    )
+
+    score, risk = calculate_score(suggestions)
+
     return {
         "parsed": parsed,
-        "estimated_cost": cost
+        "estimated_cost": cost,
+        "optimization_score": score,
+        "risk_level": risk,
+        "suggestions": suggestions
     }

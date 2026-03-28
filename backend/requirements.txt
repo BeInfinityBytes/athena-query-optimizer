@@ -4,3 +4,4 @@ sqlparse
 pydantic
 python-dotenv
 boto3
+sqlglot
