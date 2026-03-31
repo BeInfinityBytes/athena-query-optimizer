@@ -7,6 +7,9 @@ from aws.glue_service import get_table_schema
 from aws.s3_service import get_bucket_size
 from optimizer.suggestions import generate_suggestions
 from optimizer.scorer import calculate_score
+from optimizer.advanced_analysis import analyze_query_efficiency
+from optimizer.rewrite_engine import generate_rewrite
+from optimizer.optimizer_router import route_optimizer
 
 
 app = FastAPI()
@@ -51,28 +54,28 @@ def optimize(data: QueryInput):
 
     parsed = parse_query(data.query)
 
-    schema = get_table_schema("optimizer_db", parsed["table"])
+    # stop early if invalid SQL
+    if not parsed.get("valid", True):
+        return parsed
+
+    schema = get_table_schema(
+        "optimizer_db",
+        parsed["table"]
+    )
 
     size = get_bucket_size("athena-query-optimizer-data")
 
     cost = estimate_cost(
         size,
-        len(parsed["columns"]),
+        len(parsed.get("columns", [])),
         len(schema)
     )
 
-    # NEW PART
-    suggestions = generate_suggestions(
+    result = route_optimizer(
         parsed,
-        schema
+        schema,
+        data.query,
+        cost
     )
 
-    score, risk = calculate_score(suggestions)
-
-    return {
-        "parsed": parsed,
-        "estimated_cost": cost,
-        "optimization_score": score,
-        "risk_level": risk,
-        "suggestions": suggestions
-    }
+    return result
