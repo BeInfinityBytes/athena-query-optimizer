@@ -10,9 +10,19 @@ from optimizer.scorer import calculate_score
 from optimizer.advanced_analysis import analyze_query_efficiency
 from optimizer.rewrite_engine import generate_rewrite
 from optimizer.optimizer_router import route_optimizer
+from ai.gemini_service import generate_optimization_explanation
 
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Allow Vite frontend
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class QueryInput(BaseModel):
     query: str
@@ -77,5 +87,11 @@ def optimize(data: QueryInput):
         data.query,
         cost
     )
+
+    # Check if we got a valid response with a rewritten query to explain
+    if isinstance(result, dict) and "rewrite_preview" in result:
+        optimized_sql = result["rewrite_preview"]
+        explanation = generate_optimization_explanation(data.query, optimized_sql, schema)
+        result["ai_explanation"] = explanation
 
     return result
